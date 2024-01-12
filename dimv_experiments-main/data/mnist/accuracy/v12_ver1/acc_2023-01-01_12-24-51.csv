@@ -1,0 +1,9 @@
+,modified_huber
+threshold_05_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.736, 'impDi': 0.765}"
+threshold_10_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.715, 'impDi': 0.765}"
+threshold_20_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.743, 'impDi': 0.758}"
+threshold_30_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.754, 'impDi': 0.769}"
+threshold_40_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.732, 'impDi': 0.768}"
+threshold_50_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.742, 'impDi': 0.749}"
+threshold_60_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.735, 'impDi': 0.764}"
+threshold_70_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.761, 'impDi': 0.774}"

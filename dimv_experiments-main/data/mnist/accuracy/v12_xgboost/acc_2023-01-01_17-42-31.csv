@@ -1,0 +1,9 @@
+,threshold_05_deletedWidthHeightPc_6060_noImagePc_50,threshold_10_deletedWidthHeightPc_6060_noImagePc_50,threshold_20_deletedWidthHeightPc_6060_noImagePc_50,threshold_30_deletedWidthHeightPc_6060_noImagePc_50,threshold_40_deletedWidthHeightPc_6060_noImagePc_50,threshold_50_deletedWidthHeightPc_6060_noImagePc_50,threshold_60_deletedWidthHeightPc_6060_noImagePc_50,threshold_70_deletedWidthHeightPc_6060_noImagePc_50
+threshold_05_deletedWidthHeightPc_6060_noImagePc_50,"{'softImpute': 0.9417, 'impDi': 0.9562}",,,,,,,
+threshold_10_deletedWidthHeightPc_6060_noImagePc_50,,"{'softImpute': 0.9406, 'impDi': 0.9584}",,,,,,
+threshold_20_deletedWidthHeightPc_6060_noImagePc_50,,,"{'softImpute': 0.9443, 'impDi': 0.9558}",,,,,
+threshold_30_deletedWidthHeightPc_6060_noImagePc_50,,,,"{'softImpute': 0.9423, 'impDi': 0.9588}",,,,
+threshold_40_deletedWidthHeightPc_6060_noImagePc_50,,,,,"{'softImpute': 0.9438, 'impDi': 0.9582}",,,
+threshold_50_deletedWidthHeightPc_6060_noImagePc_50,,,,,,"{'softImpute': 0.9449, 'impDi': 0.9597}",,
+threshold_60_deletedWidthHeightPc_6060_noImagePc_50,,,,,,,"{'softImpute': 0.9404, 'impDi': 0.956}",
+threshold_70_deletedWidthHeightPc_6060_noImagePc_50,,,,,,,,"{'softImpute': 0.9405, 'impDi': 0.9587}"

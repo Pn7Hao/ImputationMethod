@@ -1,0 +1,408 @@
+---
+title: "classification_experiement_v9 - implement DIMVf"
+output:
+  pdf_document: default
+  html_document: default
+date: "2022-09-30"
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE, echo=TRUE, eval = TRUE)
+``` 
+
+
+```{r}
+require(knitr)
+purl("splitting_folds.Rmd", output = 'splitting_folds.R')
+```
+
+```{r}
+packages <- c(
+  "missMDA", 
+  "softImpute", 
+  "caret", 
+  "caTools", 
+  "glue", 
+  "jsonlite", 
+  "future.apply", 
+  "dslabs", 
+  "cowplot", 
+  "magick", 
+  "progress", 
+  "datasets", 
+  "stats", 
+  "foreach", 
+  "fdm2id", 
+  "datasetsICR", 
+  "HDclassif", 
+  "readxl", 
+  "httr", 
+  "doParallel"
+)
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE)) 
+
+library(here) 
+source(here('src/rscript/dimv.R'))  
+source(here('src/rscript/dpers.R'))   
+source(here('src/rscript/utils.R'))    
+source(here('src/rscript/imputation_comparation.R'))     
+
+plan(multisession, workers = 8)
+library(doParallel)
+registerDoParallel(cores=8) 
+```
+
+```{r}
+read_excel_url <- function(url, sheet_num){
+  GET(url, write_disk(tf <- tempfile(fileext = ".xls")))
+  df <- read_excel(tf, sheet=2)
+  unlink(tf)
+  return(df)
+}
+```
+
+```{r}
+new_thyroid
+```
+
+
+## Reading UCI dataset: 
+
+```{r}
+breast_tissue = read_excel_url('https://archive.ics.uci.edu/ml/machine-learning-databases/00192/BreastTissue.xls')
+breast_tissue = subset(breast_tissue, select = -c(1) )
+parkinsons = read.csv('http://archive.ics.uci.edu/ml/machine-learning-databases/parkinsons/parkinsons.data')
+parkinsons = subset(parkinsons, select = -c(name) )
+new_thyroid = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/thyroid-disease/new-thyroid.data', header=F)
+breast_cancer_wisconsin = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data', header = F)
+breast_cancer_wisconsin = subset(breast_cancer_wisconsin, select = -c(1) )
+
+letter = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/letter-recognition/letter-recognition.data', header=F)
+spam = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data', header=F )
+
+yeast = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/yeast/yeast.data', header=F, sep="")
+yeast = subset(yeast, select = -c(1) )
+lymphography = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/lymphography/lymphography.data', header=F)
+lymphography
+glass = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/glass/glass.data', header = F)
+glass = subset(glass, select = -c(1) )
+
+segmentation = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/image/segmentation.data', skip = 4, header = F)
+
+wisconsin = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data', header=F)
+wisconsin = subset(wisconsin, select = -c(1) )
+
+soybean = read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/soybean/soybean-large.data", header=F)
+
+wine_quality = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv', header=T, sep = ";")
+ 
+ecoli = read.csv('https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/ecoli.data', header=F, sep="")
+ecoli  = subset(ecoli, select = -c(1))
+
+```
+
+
+
+
+```{r}
+breast_tissue = as.data.frame(breast_tissue)
+parkinsons = as.data.frame(parkinsons)
+new_thyroid = as.data.frame(new_thyroid)
+breast_cancer_wisconsin = as.data.frame(breast_cancer_wisconsin)
+yeast = as.data.frame(yeast)
+
+data(iris)
+data(ionosphere)
+data(seeds) 
+data(wine)
+
+```
+
+```{r}
+#GLOBAL VARIABLES
+iris_conf                    = list("name" = "iris", "label_col" = "Species") 
+ionosphere_conf              = list("name" = "ionosphere", "label_col" = "V35") 
+seeds_conf                   = list("name" = "seeds", "label_col" = "variety") 
+wine_conf                    = list("name" = "wine", "label_col" = "class") 
+
+
+breast_tissue_conf           = list("name" = "breast_tissue", "label_col" = "Class")  
+parkinsons_conf              = list("name" = "parkinsons", "label_col" = "status")  
+new_thyroid_conf             = list("name" = "new_thyroid", "label_col" = "V1")  
+breast_cancer_wisconsin_conf = list("name" = "breast_cancer_wisconsin", "label_col" = "V2")  
+letter_conf                  = list("name" = "letter", "label_col" = "V1")
+spam_conf                    = list("name"  = "spam", "label_col" = "V58")
+yeast_conf                   = list("name"  = "yeast", "label_col" = "V10")
+lymphography_conf            = list("name"  = "lymphography", "label_col" = "V1")
+glass_conf                   = list("name"  = "glass", "label_col" = "V11")
+segmentation_conf            = list("name" = "segmentation", "label_col" = "V1")
+wisconsin_conf               = list("name" = "wincosin", "label_col" = "V2")
+soybean_conf                 = list("name" = "soybean", "label_col" = "V1")
+wine_quality_conf            = list("name" = "wine_quality", "label_col" = "quality")
+ecoli_conf                   = list("name" = "ecoli", "label_col" = "V9") 
+ 
+```
+
+# Dataset list
+```{r}
+#DATASETS = c("iris", "ionosphere", "seeds", "wine", "breast_tissue", "parkinsons", "new_thyroid", "breast_cancer_wisconsin")
+```
+
+```{r}
+dim(yeast)
+```
+```{r}
+new_thyroid$V1
+```
+
+
+```{r}
+length(unique(new_thyroid$V1))
+```
+
+# Utils 
+
+```{r}
+createRandomlyMissingData = function(data, rate){
+  data = as.matrix(data)
+  col_num = dim(data)[2] 
+  flatten = as.vector(data) 
+  
+    
+  mask = runif(length(flatten), min = 0, max = 1) < rate
+  flatten[mask]=NaN
+  return(matrix(flatten, ncol = col_num))
+}
+```
+
+```{r, message = FALSE, warning = FALSE}
+summary_result <- function(result, caclCol, groupByCol, fold_number, dataset_name, missing_rate, order_decreasing=TRUE){
+  result$col = as.numeric(result[, caclCol]) 
+  result$imputation  = result[, groupByCol]
+  summary = data.frame(
+                  group=levels(factor(result$imputation)), 
+                  mean=(aggregate(result$col, by=list(result$imputation), FUN=mean)$x),
+                  sd=(aggregate(result$col, by=list(result$imputation), FUN=sd)$x), 
+                  iteration_times = max(result$fold_number)
+             )
+  summary = summary[order(summary$mean, decreasing=order_decreasing), ]   
+  summary$dataset_name = dataset_name
+  summary$missing_rate = missing_rate
+  return(summary)
+} 
+``` 
+
+
+
+
+
+```{r}
+SaveEachFold <- function(
+    fold, 
+    missing_data, 
+    data, 
+    labels, 
+    folds, 
+    dataset_name, 
+    folder_name, 
+    DIMVthreshold){ 
+  
+      test_filter = unlist(unname(folds[fold])) 
+      labels = as.factor(labels)
+      
+      missing.X_train = missing_data[-test_filter, ] 
+      missing.X_test = missing_data[test_filter, ]
+      y.train = labels[-test_filter]
+      y.test = labels[test_filter]  
+      
+      train_normed = normalizing(x=missing.X_train, Xtrain=missing.X_train)
+      missing.X_train_normed = train_normed$X_normed
+      missing.X_train_mean = train_normed$mean
+      missing.X_train_sd = train_normed$sd 
+      
+      test_normed = normalizing(x=missing.X_test, Xtrain=missing.X_train)
+      missing.X_test_normed = test_normed$X_normed 
+      
+      #saving Normalized misssing data
+      curr_dir = getwd()
+      if (dir.exists(file.path(root, dataset_name)) == F){
+        dir.create(file.path(root, dataset_name))
+      }
+      
+      if (dir.exists(file.path(root, dataset_name, folder_name))==F){
+          dir.create(file.path(root, dataset_name, folder_name))
+      }
+      if (dir.exists(file.path(root, dataset_name, folder_name, fold))==F){
+          dir.create(file.path(root, dataset_name, folder_name, fold))
+      } 
+
+      path.missing.X_train_normed = file.path(root, dataset_name, folder_name, fold,  "missing_X_train_normed.csv")
+      path.missing.X_test_normed = file.path(root, dataset_name, folder_name, fold,  "missing_X_test_normed.csv") 
+      path.missing.X_train_mean =  file.path(root, dataset_name, folder_name, fold,  "missing_X_train_mean.csv") 
+      path.missing.X_train_sd = file.path(root, dataset_name, folder_name, fold,  "missing_X_train_sd.csv") 
+      
+      path.ori.X_train_ori = file.path(root, dataset_name, folder_name, fold, "ori_X_train.csv")
+      path.ori.X_test_ori = file.path(root, dataset_name, folder_name, fold, "ori_X_test.csv")
+      
+      path.y_train = file.path(root, dataset_name, folder_name, fold, "y_train.csv")
+      path.y_test = file.path(root, dataset_name, folder_name, fold, "y_test.csv")
+       
+      
+      write.csv(missing.X_train_normed, path.missing.X_train_normed, row.names=FALSE)
+      write.csv(missing.X_test_normed, path.missing.X_test_normed, row.names=FALSE)
+      write.csv(missing.X_train_mean, path.missing.X_train_mean, row.names=FALSE)
+      write.csv(missing.X_train_sd, path.missing.X_train_sd, row.names=FALSE)
+      
+      ori.X_train = data[-test_filter,,drop=F] 
+      ori.X_test  = data[test_filter,,drop=F]
+      
+      write.csv(ori.X_train, path.ori.X_train_ori, row.names=FALSE)
+      write.csv(ori.X_test, path.ori.X_test_ori, row.names=FALSE)
+      
+      write.csv(y.train, path.y_train, row.names=FALSE) 
+      write.csv(y.test, path.y_test, row.names=FALSE)
+}
+      
+```
+
+
+
+
+```{r}
+splittingAndSavingFolds <- function(
+    root, 
+    DIMV_THRESHOLD, 
+    MISSING_RATE, 
+    NUM_FOLDS, 
+    DATASETS){
+  
+  formatFloat2String <- function(float_value){
+    i = as.integer(float_value*100) 
+    s = if (as.integer(i/10) < 1){paste0("0", toString(i))}else{toString(i)} 
+    return(s)
+  } 
+  
+  folder_name = paste0(
+    "missing_rate_",
+    formatFloat2String(MISSING_RATE), 
+    "_threshold_", 
+    formatFloat2String(DIMV_THRESHOLD)
+    )
+  
+  
+  print(folder_name)
+  
+  count = 0
+  for (dataset_name in DATASETS) {
+    print(paste0("dataset ", dataset_name))
+    dataset_conf =  get(paste0(dataset_name, "_conf")) 
+    dataset = get(dataset_name)
+    label_col = dataset_conf$label_col 
+    print(paste0("dim(dataset)=", dim(dataset))) 
+    result = NULL 
+    count = 0
+    while(is.null(result) & count < 10000){
+      try({
+          count = count+1  
+          print(paste0("count", count) )
+          data = dataset[, !names(dataset) %in% c(label_col)]  
+          labels_origin = dataset[, label_col,drop=F ]
+        
+           #shuffle  
+          shuffled_idx = sample(1:nrow(data))  
+          data = data[shuffled_idx, ] 
+          labels = as.numeric(factor(labels_origin[shuffled_idx, ]))   
+          
+          missing_data = createRandomlyMissingData(data, MISSING_RATE)
+            
+          folds = createFolds(labels, k=NUM_FOLDS)
+          
+          allNANinRowsFound = length(which(rowSums(is.na(missing_data))==dim(data)[2])) > 0 
+          
+          if (allNANinRowsFound){
+              print(length(which(rowSums(is.na(missing_data))==dim(data)[2])) )
+              print(paste0("allNANinRowsFound = ", allNANinRowsFound, "_in_dataset", dataset_name))
+              stop("found all NAN in Rows in missing data, try to sample again")
+            } 
+          
+  
+          pb <- txtProgressBar(min = 0, max = NUM_FOLDS, style = 3)
+          
+          for (i in 1:NUM_FOLDS){
+                print(paste0("Start fold number: ", i)) 
+                SaveEachFold(i, missing_data, data, labels, folds, dataset_name, folder_name, DIMV_THRESHOLD)
+                setTxtProgressBar(pb, i) 
+          }
+          
+          
+
+          
+          break #break/exit the for-loop
+        }, silent = FALSE)
+  }
+  }
+}  
+```
+
+
+
+
+```{r}
+#root = "../../data/randomly_missing_dataset/svmRadial_20230118"
+root = "../../data/randomly_missing_dataset/svmRadial_20230120"
+curr_dir = getwd()
+if (dir.exists(file.path(root)) == F){
+  dir.create(file.path(root))
+}else{
+  print('Root exists')
+}
+# DATASETS = c("new_thyroid", "spam", "yeast")
+DATASETS = c("new_thyroid")
+# DATASETS =c("letter", "spam", "iris", "ionosphere", "seeds", "wine","breast_tissue", "new_thyroid", "breast_cancer_wisconsin" )
+# DATASETS = c("iris")
+NUM_FOLDS = 5 
+
+# DATASETS = c("yeast", "lymphography")
+# #DATASETS ="lymphography"
+# DATASETS =c("iris","yeast", "lymphography")
+# DATASETS = c("glass")
+# DATASETS = c("iris") 
+# DATASETS = c("wisconsin")
+
+
+DIMV_THRESHOLD_LIST = c(.1)
+MISSING_RATE_LIST = c(.5, .4,.3,.2,.1)
+total = length(DIMV_THRESHOLD_LIST) * length(MISSING_RATE_LIST)
+
+print(total)
+count = 0
+print(DATASETS)
+print(MISSING_RATE_LIST)
+print("==================================")
+for (DIMV_THRESHOLD in DIMV_THRESHOLD_LIST){
+  for (MISSING_RATE in MISSING_RATE_LIST){
+
+    print(">>>>>>>>>>>>>>START--------------")
+    print(paste0("MISSING_RATE_", MISSING_RATE, "_THRESHOLD_", DIMV_THRESHOLD , "_NUM_FOLDS_", NUM_FOLDS))
+
+    splittingAndSavingFolds(
+        root,
+        DIMV_THRESHOLD,
+        MISSING_RATE,
+        NUM_FOLDS,
+        DATASETS)
+
+    count = count+1
+    print(paste(">>>>>>>>>>>>>>>", count, "/", total, " done"))
+  }
+}
+
+```

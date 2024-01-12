@@ -1,0 +1,42 @@
+# Ignore node_modules directory
+node_modules/
+TRASK/
+__pycache__/
+
+# Ignore build artifacts
+build/
+dist/
+*.log
+
+# Ignore dependency files
+package-lock.json
+yarn.lock
+
+# Ignore environment variables file
+.env
+
+# Ignore compiled binaries
+*.class
+*.dll
+*.exe
+
+# Ignore logs and databases
+*.log
+*.sqlite
+*.db
+
+# Ignore generated files
+*.min.js
+*.min.css
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore VSCode configuration
+.vscode/
+
+# Ignore system files that might be created on certain platforms
+.DS_Store
+Thumbs.db
+experiments.zip
+
