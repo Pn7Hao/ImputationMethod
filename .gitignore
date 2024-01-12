@@ -39,6 +39,5 @@ yarn.lock
 .DS_Store
 Thumbs.db
 experiments.zip
-DATA/mnist_ms_nm_0.4.csv
-DATA/mnist_ms_nm_0.5.csv
-DATA/mnist_ms_nm_0.6.csv
+DATA/*.csv
+
